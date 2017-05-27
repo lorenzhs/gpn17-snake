@@ -193,7 +193,7 @@ void set_all_LEDs(uint32_t colour, bool commit = true) {
 }
 
 // Player lost -> vibrate, flash LEDs, and reset the game
-void reset_game(Badge &badge) {
+void reset_game() {
     badge.setGPIO(VIBRATOR, HIGH);
     set_all_LEDs(pixels.Color(100, 0, 0));
 
@@ -216,7 +216,7 @@ void game_loop() {
     case SNAKE_DN:
     case SNAKE_LE:
     case SNAKE_RI:
-    case SNAKE_END: reset_game(badge); return; /* break;*/
+    case SNAKE_END: reset_game(); return; /* break;*/
     default: /* empty */ break;
     }
     set(new_head_pos, dir_to_field(dir));
