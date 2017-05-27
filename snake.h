@@ -8,13 +8,16 @@ T max(const T& a, const T& b) {
 class Snake {
 public:
     Snake(Badge &badge_) : badge(badge_) {}
+    // Game initialisation, call this from setup()
     void init_game();
+    // Game loop, call this from loop()
     void main_loop();
 
 private:
 const int16_t WIDTH = 42, HEIGHT = 42;
 const int16_t SIZE = WIDTH * HEIGHT;
 
+// Movement directions
 enum direction : char {
     DIR_UP,
     DIR_DOWN,
@@ -22,6 +25,7 @@ enum direction : char {
     DIR_RIGHT
 };
 
+// Possible states of a square on the map
 enum field : char {
     EMPTY = 0,
     FOOD,
@@ -32,16 +36,23 @@ enum field : char {
     SNAKE_END
 };
 
+// The badge object, for polling joystick and GPIO (vibrator)
 Badge &badge;
+
+// The game data
 field* data = nullptr;
+
+// position of the snake's head and its length as well as direction of movement
 int16_t head_pos, snake_len;
 direction dir;
 
+// Keep track of timing
 uint32_t start_time = 0;
 uint32_t last_move = 0;
 uint32_t target_fps = 5;
 uint32_t frame_delay = 1000000 / target_fps; // .2 seconds initially
 
+// Draw a square of the game board (3x3 pixels on the screen)
 void draw_pixel(int16_t x, int16_t y, uint16_t colour) {
     tft.drawPixel(3*x,   3*y,   colour);
     tft.drawPixel(3*x,   3*y+1, colour);
@@ -54,12 +65,14 @@ void draw_pixel(int16_t x, int16_t y, uint16_t colour) {
     tft.drawPixel(3*x+2, 3*y+2, colour);
 }
 
+// Set a square on the map and draw it on the screen, indexed by (x,y) coords
 void set(int16_t x, int16_t y, field val) {
     data[x + y*WIDTH] = val;
     uint16_t colour = (val == EMPTY) ? BLACK : WHITE;
     draw_pixel(x, y, colour);
 }
 
+// Set a square on the map and draw it on the screen, indexed by data position
 void set(int16_t pos, field val) {
     data[pos] = val;
     int16_t y = pos/WIDTH, x = pos - y * WIDTH;
@@ -71,15 +84,12 @@ field get(int16_t x, int16_t y) {
     return data[x + y*WIDTH];
 }
 
+// Convert between (x,y) coordinates and map positions
 int16_t to_pos(int16_t x, int16_t y) {
     return x + y*WIDTH;
 }
 
-void set_target_fps(uint32_t fps) {
-    target_fps = fps;
-    frame_delay = 1000000 / target_fps;
-}
-
+// Get the position of the field {left,right,above,below} that of `pos`
 int16_t offset(int16_t pos, direction dir) {
     switch(dir) {
     case DIR_UP: pos -= WIDTH; break;
@@ -92,6 +102,7 @@ int16_t offset(int16_t pos, direction dir) {
     return pos;
 }
 
+// Move one step along the snake (from head to tail)
 int16_t walk_snake(int16_t pos) {
     int16_t res;
     switch(data[pos]) {
@@ -104,6 +115,7 @@ int16_t walk_snake(int16_t pos) {
     return res;
 }
 
+// Get the field type of the snake's new head
 field dir_to_field(direction dir) {
     field f;
     switch(dir) {
@@ -115,7 +127,7 @@ field dir_to_field(direction dir) {
     return f;
 }
 
-// check viability of new food placement
+// check viability of new food placement (i.e. not neighbouring snake)
 bool proximity_check(int16_t cand_pos) {
     if (data[cand_pos] != EMPTY ||
         data[offset(cand_pos, DIR_UP)] != EMPTY ||
@@ -126,6 +138,7 @@ bool proximity_check(int16_t cand_pos) {
     return false;
 }
 
+// Pick a random field that isn't snake-adjacent and place food on it
 void place_new_food() {
     uint16_t cand;
     do {
@@ -134,6 +147,13 @@ void place_new_food() {
     set(cand, FOOD);
 }
 
+// Set inter-step delay to `fps` snake movements per second
+void set_target_fps(uint32_t fps) {
+    target_fps = fps;
+    frame_delay = 1000000 / target_fps;
+}
+
+// Handle eating
 void eat() {
     ++snake_len;
     // speed it up by 20%!
@@ -144,8 +164,8 @@ void eat() {
     }
 }
 
-
-void set_all_pixels(uint32_t colour, bool commit = true) {
+// Set all LEDS to the same colour
+void set_all_LEDs(uint32_t colour, bool commit = true) {
     pixels.setPixelColor(0, colour);
     pixels.setPixelColor(1, colour);
     pixels.setPixelColor(2, colour);
@@ -154,14 +174,15 @@ void set_all_pixels(uint32_t colour, bool commit = true) {
         pixels.show();
 }
 
+// Player lost -> vibrate, flash LEDs, and reset the game
 void reset_game(Badge &badge) {
     badge.setGPIO(VIBRATOR, HIGH);
-    set_all_pixels(pixels.Color(100, 0, 0));
+    set_all_LEDs(pixels.Color(100, 0, 0));
 
     delay(500);
 
     badge.setGPIO(VIBRATOR, LOW);
-    set_all_pixels(pixels.Color(0, 0, 0));
+    set_all_LEDs(pixels.Color(0, 0, 0));
 
     init_game();
 }
@@ -239,12 +260,12 @@ void Snake::main_loop() {
     // process input
     delay(0);
     if (badge.getJoystickState() == JoystickState::BTN_ENTER) {
-        set_all_pixels(pixels.Color(0, 30, 0));
+        set_all_LEDs(pixels.Color(0, 30, 0));
         delay(100);
         last_move = micros();
         return;
     } else {
-        set_all_pixels(pixels.Color(0, 0, 0), false);
+        set_all_LEDs(pixels.Color(0, 0, 0), false);
     }
 
     if (badge.getJoystickState() == JoystickState::BTN_LEFT) {
