@@ -7,8 +7,12 @@
 
 Badge badge;
 
+// omfg include here :O (needs Badge object)
+#include "menu.h"
+
 Snake snake(badge);
 
+String titles[2] = {"Gyroscope", "Joystick"};
 
 void setup() {
     badge.init();
@@ -24,8 +28,13 @@ void setup() {
     rboot_config rboot_config = rboot_get_config();
     File f = SPIFFS.open("/rom" + String(rboot_config.current_rom), "w");
     f.println("Snake\n");
+    f.close();
 
-    snake.init_game(/* use_gyro */true);
+    int choice = renderMenu(titles, (sizeof(titles) / sizeof(*titles)) - 1);
+    if (choice == 0)
+        snake.init_game(/* use_gyro */ true);
+    else
+        snake.init_game(/* use_gyro */ false);
 
     delay(300);
 }
