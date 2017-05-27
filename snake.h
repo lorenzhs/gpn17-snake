@@ -111,13 +111,11 @@ int16_t to_pos(int16_t x, int16_t y) {
 // Get the position of the field {left,right,above,below} that of `pos`
 int16_t offset(int16_t pos, direction dir) {
     switch(dir) {
-    case DIR_UP: pos -= WIDTH; break;
-    case DIR_DOWN: pos += WIDTH; break;
+    case DIR_UP: pos -= WIDTH; if (pos < 0) pos += SIZE; break;
+    case DIR_DOWN: pos += WIDTH; if (pos >= SIZE) pos -= SIZE; break;
     case DIR_LEFT: if (pos % WIDTH == 0) pos += WIDTH; pos--; break;
     case DIR_RIGHT: pos++; if (pos % WIDTH == 0) pos -= WIDTH; break;
     }
-    if (pos < 0) pos += (WIDTH * HEIGHT);
-    if (pos >= WIDTH * HEIGHT) pos -= (WIDTH * HEIGHT);
     return pos;
 }
 
@@ -170,7 +168,7 @@ bool proximity_check(int16_t cand_pos) {
 
 // Pick a random field that isn't snake-adjacent and place food on it
 void place_new_food() {
-    uint16_t cand;
+    int16_t cand;
     do {
         cand = random(0, SIZE);
     } while (proximity_check(cand));
