@@ -224,7 +224,7 @@ void game_loop() {
     if (!grow) {
         // Walk the snake and delete the last square
         int16_t last_pos = new_head_pos, pos = head_pos, new_pos;
-        while (pos >= 0 && (new_pos = walk_snake(pos)) && new_pos >= 0) {
+        while (pos >= 0 && (new_pos = walk_snake(pos)) >= 0) {
             last_pos = pos;
             pos = new_pos;
         }
