@@ -25,7 +25,7 @@ void setup() {
     File f = SPIFFS.open("/rom" + String(rboot_config.current_rom), "w");
     f.println("Snake\n");
 
-    snake.init_game();
+    snake.init_game(/* use_gyro */true);
 
     delay(300);
 }

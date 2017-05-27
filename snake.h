@@ -1,5 +1,7 @@
 #pragma once
 
+#include "gyro.h"
+
 template <typename T>
 T max(const T& a, const T& b) {
     return a < b ? b : a;
@@ -9,7 +11,7 @@ class Snake {
 public:
     Snake(Badge &badge_) : badge(badge_) {}
     // Game initialisation, call this from setup()
-    void init_game();
+    void init_game(bool use_gyro_);
     // Game loop, call this from loop()
     void main_loop();
 
@@ -39,12 +41,18 @@ enum field : char {
 // The badge object, for polling joystick and GPIO (vibrator)
 Badge &badge;
 
+// Our gyro object
+Gyro gyro;
+
+// Whether to use the gyro (true) or the joystick (false)
+bool use_gyro = true;
+
 // The game data
 field* data = nullptr;
 
 // position of the snake's head and its length as well as direction of movement
 int16_t head_pos, snake_len;
-direction dir;
+direction dir, last_dir;
 
 // Keep track of timing
 uint32_t start_time = 0;
@@ -202,7 +210,7 @@ void reset_game() {
     badge.setGPIO(VIBRATOR, LOW);
     set_all_LEDs(pixels.Color(0, 0, 0));
 
-    init_game();
+    init_game(use_gyro);
 }
 
 // main game loop, called whenever the snake should move
@@ -235,11 +243,12 @@ void game_loop() {
 
     // update head position
     head_pos = new_head_pos;
+    last_dir = dir;
 }
 
 };
 
-void Snake::init_game() {
+void Snake::init_game(bool use_gyro_) {
     if (data == nullptr) {
         data = new field[WIDTH * HEIGHT];
     }
@@ -254,6 +263,13 @@ void Snake::init_game() {
     // blank the screen
     tft.fillScreen(BLACK);
 
+    // init gyro
+    use_gyro = use_gyro_;
+    if (use_gyro) {
+        gyro.init();
+        gyro.calibrate();
+    }
+
     // place the snake
     int16_t head_x = WIDTH/4, head_y = HEIGHT/2;
     head_pos = to_pos(head_x, head_y);
@@ -261,6 +277,7 @@ void Snake::init_game() {
     set(head_x-1, head_y, SNAKE_LE);
     set(head_x-2, head_y, SNAKE_END);
     snake_len = 3;
+    last_dir = DIR_RIGHT;
     dir = DIR_RIGHT;
 
     // add some food
@@ -278,11 +295,19 @@ void Snake::main_loop() {
     // process input
     delay(0);
 
-    JoystickState joystick = badge.getJoystickState();
+    // Get input from chosen device
+    JoystickState joystick;
+    if (use_gyro) {
+        joystick = gyro.get_joystick();
+    } else {
+        joystick = badge.getJoystickState();
+        set_all_LEDs(pixels.Color(0, 0, 0), false);
+    }
+
     direction new_dir = dir;
-    set_all_LEDs(pixels.Color(0, 0, 0), false);
     switch(joystick) {
     case JoystickState::BTN_ENTER:
+        /* doesn't exist with gyro, this is joystick only */
         set_all_LEDs(pixels.Color(0, 30, 0));
         delay(100);
         last_move = micros();
@@ -290,27 +315,36 @@ void Snake::main_loop() {
         break;
     case JoystickState::BTN_UP:
         new_dir = DIR_UP;
-        pixels.setPixelColor(0, pixels.Color(0, 0, 30));
+        if (last_dir == DIR_DOWN)
+            pixels.setPixelColor(0, pixels.Color(64, 0, 0));
+        else
+            pixels.setPixelColor(0, pixels.Color(0, 0, 50));
         break;
     case JoystickState::BTN_LEFT:
         new_dir = DIR_LEFT;
-        pixels.setPixelColor(1, pixels.Color(0, 0, 30));
+        if (last_dir == DIR_RIGHT)
+            pixels.setPixelColor(1, pixels.Color(64, 0, 0));
+        else
+            pixels.setPixelColor(1, pixels.Color(0, 0, 50));
         break;
     case JoystickState::BTN_DOWN:
         new_dir = DIR_DOWN;
-        pixels.setPixelColor(3, pixels.Color(0, 0, 30));
+        if (last_dir == DIR_UP)
+            pixels.setPixelColor(3, pixels.Color(64, 0, 0));
+        else
+            pixels.setPixelColor(3, pixels.Color(0, 0, 50));
         break;
     case JoystickState::BTN_RIGHT:
         new_dir = DIR_RIGHT;
-        pixels.setPixelColor(2, pixels.Color(0, 0, 30));
+        if (last_dir == DIR_LEFT)
+            pixels.setPixelColor(2, pixels.Color(64, 0, 0));
+        else
+            pixels.setPixelColor(2, pixels.Color(0, 0, 50));
         break;
     default: break; // JoystickState::BTN_NOTHING
     }
 
-    if (new_dir == reverse(dir)) {
-        // no reversing!
-        set_all_LEDs(pixels.Color(30, 30, 0), false);
-    } else {
+    if (new_dir != reverse(last_dir)) {
         dir = new_dir;
     }
 
