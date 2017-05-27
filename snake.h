@@ -49,8 +49,7 @@ direction dir;
 // Keep track of timing
 uint32_t start_time = 0;
 uint32_t last_move = 0;
-uint32_t target_fps = 5;
-uint32_t frame_delay = 1000000 / target_fps; // .2 seconds initially
+uint32_t frame_delay;
 
 void draw_square(int16_t x, int16_t y) {
     field& f = data[to_pos(x, y)];
@@ -167,21 +166,11 @@ void place_new_food() {
     set(cand, FOOD);
 }
 
-// Set inter-step delay to `fps` snake movements per second
-void set_target_fps(uint32_t fps) {
-    target_fps = fps;
-    frame_delay = 1000000 / target_fps;
-}
-
 // Handle eating
 void eat() {
     ++snake_len;
-    // speed it up by 20%!
-    if (snake_len % 5) {
-        uint32_t fps = max(target_fps + 1,
-                           static_cast<uint32_t>(1.2 * target_fps));
-        set_target_fps(fps);
-    }
+    // 4% speedup per food item
+    frame_delay /= 1.04;
 }
 
 // Set all LEDS to the same colour
@@ -251,7 +240,7 @@ void Snake::init_game() {
     }
 
     randomSeed(micros());
-    set_target_fps(5);
+    frame_delay = 1000000 / 8; // 8 fps
 
     // blank the screen
     tft.fillScreen(BLACK);
