@@ -283,7 +283,7 @@ void Snake::main_loop() {
     set_all_LEDs(pixels.Color(0, 0, 0), false);
     switch(joystick) {
     case JoystickState::BTN_ENTER:
-        set_all_LEDs(pixels.Color(0, 30, 0), false);
+        set_all_LEDs(pixels.Color(0, 30, 0));
         delay(100);
         last_move = micros();
         return; //!
