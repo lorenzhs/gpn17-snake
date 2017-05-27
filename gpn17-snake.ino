@@ -7,6 +7,8 @@
 
 Badge badge;
 
+Snake snake(badge);
+
 
 void setup() {
     badge.init();
@@ -23,11 +25,11 @@ void setup() {
     File f = SPIFFS.open("/rom" + String(rboot_config.current_rom), "w");
     f.println("Snake\n");
 
-    init_game();
+    snake.init_game();
 
     delay(300);
 }
 
 void loop() {
-    main_loop(badge);
+    snake.main_loop();
 }

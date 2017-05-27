@@ -5,9 +5,14 @@ T max(const T& a, const T& b) {
     return a < b ? b : a;
 }
 
-#define WIDTH 42
-#define HEIGHT 42
+class Snake {
+public:
+    Snake(Badge &badge_) : badge(badge_) {}
+    void init_game();
+    void main_loop();
 
+private:
+const int16_t WIDTH = 42, HEIGHT = 42;
 const int16_t SIZE = WIDTH * HEIGHT;
 
 enum direction : char {
@@ -27,6 +32,7 @@ enum field : char {
     SNAKE_END
 };
 
+Badge &badge;
 field* data = nullptr;
 int16_t head_pos, snake_len;
 direction dir;
@@ -138,36 +144,6 @@ void eat() {
     }
 }
 
-void init_game() {
-    if (data == nullptr) {
-        data = new field[WIDTH * HEIGHT];
-    }
-    // clear state
-    for (int16_t i = 0; i < WIDTH * HEIGHT; i++) {
-        data[i] = EMPTY;
-    }
-
-    randomSeed(micros());
-    set_target_fps(5);
-
-    // blank the screen
-    tft.fillScreen(BLACK);
-
-    // place the snake
-    int16_t head_x = WIDTH/4, head_y = HEIGHT/2;
-    head_pos = to_pos(head_x, head_y);
-    set(head_x,   head_y, SNAKE_LE);
-    set(head_x-1, head_y, SNAKE_LE);
-    set(head_x-2, head_y, SNAKE_END);
-    snake_len = 3;
-    dir = DIR_RIGHT;
-
-    // add some food
-    place_new_food();
-
-    // reset timer
-    last_move = micros();
-}
 
 void set_all_pixels(uint32_t colour, bool commit = true) {
     pixels.setPixelColor(0, colour);
@@ -191,7 +167,7 @@ void reset_game(Badge &badge) {
 }
 
 // main game loop, called whenever the snake should move
-void game_loop(Badge &badge) {
+void game_loop() {
     int16_t new_head_pos = offset(head_pos, dir);
     bool grow = false;
 
@@ -222,8 +198,42 @@ void game_loop(Badge &badge) {
     head_pos = new_head_pos;
 }
 
+};
+
+void Snake::init_game() {
+    if (data == nullptr) {
+        data = new field[WIDTH * HEIGHT];
+    }
+    // clear state
+    for (int16_t i = 0; i < WIDTH * HEIGHT; i++) {
+        data[i] = EMPTY;
+    }
+
+    randomSeed(micros());
+    set_target_fps(5);
+
+    // blank the screen
+    tft.fillScreen(BLACK);
+
+    // place the snake
+    int16_t head_x = WIDTH/4, head_y = HEIGHT/2;
+    head_pos = to_pos(head_x, head_y);
+    set(head_x,   head_y, SNAKE_LE);
+    set(head_x-1, head_y, SNAKE_LE);
+    set(head_x-2, head_y, SNAKE_END);
+    snake_len = 3;
+    dir = DIR_RIGHT;
+
+    // add some food
+    place_new_food();
+
+    // reset timer
+    last_move = micros();
+}
+
+
 // call this from loop()
-void main_loop(Badge& badge) {
+void Snake::main_loop() {
     start_time = micros();
 
     // process input
@@ -259,7 +269,7 @@ void main_loop(Badge& badge) {
 
 
     if (last_move + frame_delay < start_time) {
-        game_loop(badge);
+        game_loop();
         last_move = start_time;
     }
 
