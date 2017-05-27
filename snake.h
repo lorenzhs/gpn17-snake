@@ -146,6 +146,17 @@ field dir_to_field(direction dir) {
     return f;
 }
 
+direction reverse(direction dir) {
+    direction res;
+    switch(dir) {
+    case DIR_UP: res = DIR_DOWN; break;
+    case DIR_DOWN: res = DIR_UP; break;
+    case DIR_LEFT: res = DIR_RIGHT; break;
+    case DIR_RIGHT: res = DIR_LEFT; break;
+    }
+    return res;
+}
+
 // check viability of new food placement (i.e. not neighbouring snake)
 bool proximity_check(int16_t cand_pos) {
     if (data[cand_pos] != EMPTY ||
@@ -268,35 +279,42 @@ void Snake::main_loop() {
 
     // process input
     delay(0);
-    if (badge.getJoystickState() == JoystickState::BTN_ENTER) {
-        set_all_LEDs(pixels.Color(0, 30, 0));
+
+    JoystickState joystick = badge.getJoystickState();
+    direction new_dir = dir;
+    set_all_LEDs(pixels.Color(0, 0, 0), false);
+    switch(joystick) {
+    case JoystickState::BTN_ENTER:
+        set_all_LEDs(pixels.Color(0, 30, 0), false);
         delay(100);
         last_move = micros();
-        return;
-    } else {
-        set_all_LEDs(pixels.Color(0, 0, 0), false);
+        return; //!
+        break;
+    case JoystickState::BTN_UP:
+        new_dir = DIR_UP;
+        pixels.setPixelColor(0, pixels.Color(0, 0, 30));
+        break;
+    case JoystickState::BTN_LEFT:
+        new_dir = DIR_LEFT;
+        pixels.setPixelColor(1, pixels.Color(0, 0, 30));
+        break;
+    case JoystickState::BTN_DOWN:
+        new_dir = DIR_DOWN;
+        pixels.setPixelColor(3, pixels.Color(0, 0, 30));
+        break;
+    case JoystickState::BTN_RIGHT:
+        new_dir = DIR_RIGHT;
+        pixels.setPixelColor(2, pixels.Color(0, 0, 30));
+        break;
+    default: break; // JoystickState::BTN_NOTHING
     }
 
-    if (badge.getJoystickState() == JoystickState::BTN_LEFT) {
-        dir = DIR_LEFT;
-        pixels.setPixelColor(1, pixels.Color(0, 0, 30));
-    } else pixels.setPixelColor(1, pixels.Color(0, 0, 0));
-
-    if (badge.getJoystickState() == JoystickState::BTN_UP) {
-        dir = DIR_UP;
-        pixels.setPixelColor(0, pixels.Color(0, 0, 30));
-    } else pixels.setPixelColor(0, pixels.Color(0, 0, 0));
-
-    if (badge.getJoystickState() == JoystickState::BTN_DOWN) {
-        dir = DIR_DOWN;
-        pixels.setPixelColor(3, pixels.Color(0, 0, 30));
-    } else pixels.setPixelColor(3, pixels.Color(0, 0, 0));
-
-    if (badge.getJoystickState() == JoystickState::BTN_RIGHT) {
-        dir = DIR_RIGHT;
-        pixels.setPixelColor(2, pixels.Color(0, 0, 30));
-    } else pixels.setPixelColor(2, pixels.Color(0, 0, 0));
-
+    if (new_dir == reverse(dir)) {
+        // no reversing!
+        set_all_LEDs(pixels.Color(30, 30, 0), false);
+    } else {
+        dir = new_dir;
+    }
 
     if (last_move + frame_delay < start_time) {
         game_loop();
