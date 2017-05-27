@@ -52,8 +52,16 @@ uint32_t last_move = 0;
 uint32_t target_fps = 5;
 uint32_t frame_delay = 1000000 / target_fps; // .2 seconds initially
 
+void draw_square(int16_t x, int16_t y) {
+    field& f = data[to_pos(x, y)];
+    if (f == FOOD)
+        draw_food(x, y);
+    else
+        draw_solid(x, y, (f == EMPTY) ? BLACK : WHITE);
+}
+
 // Draw a square of the game board (3x3 pixels on the screen)
-void draw_pixel(int16_t x, int16_t y, uint16_t colour) {
+void draw_solid(int16_t x, int16_t y, uint16_t colour) {
     tft.drawPixel(3*x,   3*y,   colour);
     tft.drawPixel(3*x,   3*y+1, colour);
     tft.drawPixel(3*x,   3*y+2, colour);
@@ -65,19 +73,31 @@ void draw_pixel(int16_t x, int16_t y, uint16_t colour) {
     tft.drawPixel(3*x+2, 3*y+2, colour);
 }
 
+// Draw food item in a diamond shape
+void draw_food(int16_t x, int16_t y) {
+    tft.drawPixel(3*x,   3*y,   BLACK);
+    tft.drawPixel(3*x,   3*y+1, WHITE);
+    tft.drawPixel(3*x,   3*y+2, BLACK);
+    tft.drawPixel(3*x+1, 3*y,   WHITE);
+    tft.drawPixel(3*x+1, 3*y+1, BLACK);
+    tft.drawPixel(3*x+1, 3*y+2, WHITE);
+    tft.drawPixel(3*x+2, 3*y,   BLACK);
+    tft.drawPixel(3*x+2, 3*y+1, WHITE);
+    tft.drawPixel(3*x+2, 3*y+2, BLACK);
+}
+
 // Set a square on the map and draw it on the screen, indexed by (x,y) coords
 void set(int16_t x, int16_t y, field val) {
     data[x + y*WIDTH] = val;
-    uint16_t colour = (val == EMPTY) ? BLACK : WHITE;
-    draw_pixel(x, y, colour);
+    draw_square(x, y);
 }
 
 // Set a square on the map and draw it on the screen, indexed by data position
 void set(int16_t pos, field val) {
     data[pos] = val;
     int16_t y = pos/WIDTH, x = pos - y * WIDTH;
-    uint16_t colour = (val == EMPTY) ? BLACK : WHITE;
-    draw_pixel(x, y, colour);
+    draw_square(x, y);
+
 }
 
 field get(int16_t x, int16_t y) {
